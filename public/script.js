@@ -12,179 +12,112 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   })
-  .then(response => response.json())
+  .then(res => res.json())
   .then(data => {
     if (data.success) {
       document.getElementById('login-page').style.display = 'none';
       document.getElementById('main-page').style.display = 'block';
       loadMenu();
-    } else {
-      alert('Invalid credentials');
-    }
+    } else { alert('Ghalat credentials!'); }
   });
-});
-
-document.getElementById('menu-btn').addEventListener('click', function() {
-  document.getElementById('menu-section').style.display = 'block';
-  document.getElementById('billing-section').style.display = 'none';
-});
-
-document.getElementById('billing-btn').addEventListener('click', function() {
-  document.getElementById('menu-section').style.display = 'none';
-  document.getElementById('billing-section').style.display = 'block';
-  document.getElementById('history-section').style.display = 'none';
-});
-
-document.getElementById('history-btn').addEventListener('click', function() {
-  document.getElementById('menu-section').style.display = 'none';
-  document.getElementById('billing-section').style.display = 'none';
-  document.getElementById('history-section').style.display = 'block';
-  loadBills();
 });
 
 document.getElementById('add-menu-form').addEventListener('submit', function(e) {
   e.preventDefault();
   const name = document.getElementById('item-name').value;
-  const price = parseFloat(document.getElementById('item-price').value);
+  const price = document.getElementById('item-price').value;
 
   fetch('/add-menu-item', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, price })
   })
-  .then(response => response.json())
+  .then(res => res.json())
   .then(data => {
     if (data.success) {
       loadMenu();
-      document.getElementById('item-name').value = '';
-      document.getElementById('item-price').value = '';
+      this.reset();
     }
   });
 });
 
+document.getElementById('menu-btn').addEventListener('click', () => showSection('menu-section'));
+document.getElementById('billing-btn').addEventListener('click', () => showSection('billing-section'));
+document.getElementById('history-btn').addEventListener('click', () => {
+  showSection('history-section');
+  loadBills();
+});
+
+function showSection(id) {
+  ['menu-section', 'billing-section', 'history-section'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+
 document.getElementById('add-item-btn').addEventListener('click', function() {
   const itemSelect = document.createElement('select');
   menuItems.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.textContent = `${item.name} - ₹${item.price}`;
-    itemSelect.appendChild(option);
+    const opt = document.createElement('option');
+    opt.value = item.id; opt.textContent = `${item.name} - Rs. ${item.price}`;
+    itemSelect.appendChild(opt);
   });
-
-  const quantityInput = document.createElement('input');
-  quantityInput.type = 'number';
-  quantityInput.min = 1;
-  quantityInput.value = 1;
-
-  const addBtn = document.createElement('button');
-  addBtn.textContent = 'Add';
-  addBtn.addEventListener('click', function() {
-    const itemId = itemSelect.value;
-    const quantity = parseInt(quantityInput.value);
-    const item = menuItems.find(i => i.id == itemId);
-    selectedItems.push({ ...item, quantity });
+  const qty = document.createElement('input');
+  qty.type = 'number'; qty.value = 1; qty.style.width = "50px";
+  const add = document.createElement('button');
+  add.textContent = 'Add'; add.style.width = "auto";
+  add.onclick = () => {
+    const item = menuItems.find(i => i.id == itemSelect.value);
+    selectedItems.push({ ...item, quantity: parseInt(qty.value) });
     updateSelectedItems();
-    itemSelect.remove();
-    quantityInput.remove();
-    addBtn.remove();
-  });
-
+    itemSelect.remove(); qty.remove(); add.remove();
+  };
   document.getElementById('selected-items').appendChild(itemSelect);
-  document.getElementById('selected-items').appendChild(quantityInput);
-  document.getElementById('selected-items').appendChild(addBtn);
+  document.getElementById('selected-items').appendChild(qty);
+  document.getElementById('selected-items').appendChild(add);
 });
 
 document.getElementById('billing-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  const customerPhone = document.getElementById('customer-phone').value;
-  const whatsappNumber = document.getElementById('whatsapp-number').value;
-
+  const phone = document.getElementById('whatsapp-number').value;
   fetch('/generate-bill', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ customerPhone, whatsappNumber, items: selectedItems, total })
+    body: JSON.stringify({ customerPhone: document.getElementById('customer-phone').value, items: selectedItems, total })
   })
-  .then(response => response.json())
+  .then(res => res.json())
   .then(data => {
     if (data.success) {
-      alert('Bill generated and sent via WhatsApp!');
-      // Open PDF and print
-      const pdfWindow = window.open(`/bills/bill_${data.billId}.pdf`, '_blank');
-      pdfWindow.onload = function() {
-        pdfWindow.print();
-      };
-      selectedItems = [];
-      total = 0;
-      updateSelectedItems();
-      document.getElementById('customer-phone').value = '';
-      document.getElementById('whatsapp-number').value = '';
+      const url = `${window.location.origin}/print-bill/${data.billId}`;
+      window.open(`https://wa.me/91${phone}?text=${encodeURIComponent("*OM SAI FAMILY RESTAURANT*\nAapka bill link: " + url)}`, '_blank');
+      window.open(`/print-bill/${data.billId}`, '_blank');
+      selectedItems = []; total = 0; updateSelectedItems(); this.reset();
     }
   });
 });
 
 function loadMenu() {
-  fetch('/menu')
-  .then(response => response.json())
-  .then(data => {
+  fetch('/menu').then(res => res.json()).then(data => {
     menuItems = data;
-    const menuList = document.getElementById('menu-list');
-    menuList.innerHTML = '';
-    data.forEach(item => {
-      const li = document.createElement('li');
-      li.textContent = `${item.name} - ₹${item.price}`;
-      menuList.appendChild(li);
-    });
+    document.getElementById('menu-list').innerHTML = data.map(i => `<li>${i.name} - Rs. ${i.price} <button onclick="deleteMenuItem(${i.id})" style="width:auto; background:red;">Delete</button></li>`).join('');
   });
 }
 
 function updateSelectedItems() {
-  const selectedItemsDiv = document.getElementById('selected-items');
-  selectedItemsDiv.innerHTML = '';
   total = 0;
-  selectedItems.forEach((item, index) => {
-    const itemDiv = document.createElement('div');
-    itemDiv.className = 'item';
-    itemDiv.innerHTML = `
-      <span>${item.name} x${item.quantity} - ₹${(item.price * item.quantity).toFixed(2)}</span>
-      <button onclick="removeItem(${index})">Remove</button>
-    `;
-    selectedItemsDiv.appendChild(itemDiv);
+  document.getElementById('selected-items').innerHTML = selectedItems.map((item, i) => {
     total += item.price * item.quantity;
-  });
+    return `<div class="item"><span>${item.name} x${item.quantity}</span><span>Rs. ${(item.price * item.quantity).toFixed(2)}</span><button onclick="removeItem(${i})" style="width:auto;">X</button></div>`;
+  }).join('');
   document.getElementById('total').textContent = total.toFixed(2);
 }
 
-function removeItem(index) {
-  selectedItems.splice(index, 1);
-  updateSelectedItems();
-}
-
 function loadBills() {
-  fetch('/bills')
-  .then(response => response.json())
-  .then(data => {
-    const billsList = document.getElementById('bills-list');
-    billsList.innerHTML = '';
-    data.forEach(bill => {
-      const li = document.createElement('li');
-      const items = JSON.parse(bill.items);
-      const itemsText = items.map(item => `${item.name} x${item.quantity}`).join(', ');
-       li.innerHTML = `
-  <strong>Bill ID: ${bill.id}</strong><br>
-  Customer Phone: ${bill.customer_phone}<br>
-  Items: ${itemsText}<br>
-  Total: ₹${bill.total.toFixed(2)}<br>
-  Date: ${new Date(bill.date).toLocaleString()}<br><br>
-  <button onclick="printThermalBill(${bill.id})">Print</button>
-`;
-      billsList.appendChild(li);
-    });
+  fetch('/bills').then(res => res.json()).then(data => {
+    document.getElementById('bills-list').innerHTML = data.map(b => `<li>ID: ${b.id} | Rs. ${b.total} | ${b.customer_phone} <button onclick="printThermalBill(${b.id})" style="width:auto;">Print</button> <button onclick="deleteBill(${b.id})" style="width:auto; background:red;">Del</button></li>`).join('');
   });
 }
-function printThermalBill(billId) {
-  const win = window.open(`/print-bill/${billId}`, '_blank');
-  win.onload = () => {
-    win.print();
-  };
-}
 
+function removeItem(i) { selectedItems.splice(i, 1); updateSelectedItems(); }
+function deleteBill(id) { if(confirm('Delete?')) fetch('/bills/'+id, {method:'DELETE'}).then(loadBills); }
+function printThermalBill(id) { window.open('/print-bill/'+id, '_blank'); }
+function deleteMenuItem(id) { if(confirm('Delete?')) fetch('/menu/'+id, {method:'DELETE'}).then(loadMenu); }
