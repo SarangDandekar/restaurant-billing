@@ -1,25 +1,29 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Family Restaurant Billing System</title>
+  <title>Om Sai Family Restaurant - Billing</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
-    <h1>Family Restaurant Billing System</h1>
+    <h1>OM SAI FAMILY RESTAURANT</h1>
+    <p>Veg & Non-Veg | Free Wi-Fi</p>
+    <small>Bypass Road, Samudrapur | Contact: 9168386929</small>
   </header>
 
   <div id="login-page">
-    <h2>Admin Login</h2>
-    <form id="login-form">
-      <label for="username">Username:</label>
-      <input type="text" id="username" required>
-      <label for="password">Password:</label>
-      <input type="password" id="password" required>
-      <button type="submit">Login</button>
-    </form>
+    <div class="login-container">
+      <div class="admin-header">Admin</div>
+      <form id="login-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter Username" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" placeholder="Enter Password" required>
+        <button type="submit">Login</button>
+      </form>
+    </div>
   </div>
 
   <div id="main-page" style="display: none;">
@@ -45,7 +49,7 @@
       <h2>Billing</h2>
       <button id="add-item-btn">Add Item to Bill</button>
       <div id="selected-items"></div>
-      <p>Total: ₹<span id="total">0.00</span></p>
+      <p>Total: Rs. <span id="total">0.00</span></p>
       <form id="billing-form">
         <label for="customer-phone">Customer Phone:</label>
         <input type="text" id="customer-phone" required>
@@ -61,11 +65,10 @@
     </section>
   </div>
 
-  <script src="script.js"></script>
-
   <footer>
-    <p>&copy; 2023 Family Restaurant Billing System. All rights reserved.</p>
+    <p>&copy; 2026 Om Sai Family Restaurant. All rights reserved.</p>
   </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
-
