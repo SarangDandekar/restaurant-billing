@@ -1,34 +1,35 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./restaurant.db');
+const mongoose = require('mongoose');
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS admin (
-    id INTEGER PRIMARY KEY,
-    username TEXT UNIQUE,
-    password TEXT
-  )`);
+// TODO: <db_password> ki jagah apna asli password likhein
+const mongoURI = 'mongodb+srv://laxmandandekar:laxman123@cluster0.q1nk9nj.mongodb.net/omsai_db?retryWrites=true&w=majority&appName=Cluster0';
 
-  db.run(`CREATE TABLE IF NOT EXISTS menu (
-    id INTEGER PRIMARY KEY,
-    name TEXT,
-    price REAL
-  )`);
+mongoose.connect(mongoURI)
+  .then(() => console.log('MongoDB Atlas Connected!'))
+  .catch(err => console.error('Connection Error:', err));
 
-  db.run(`CREATE TABLE IF NOT EXISTS bills (
-    id INTEGER PRIMARY KEY,
-    customer_phone TEXT,
-    items TEXT,
-    total REAL,
-    date TEXT
-  )`);
+const Admin = mongoose.model('Admin', new mongoose.Schema({
+  username: { type: String, unique: true },
+  password: { type: String }
+}));
 
-  // Insert default admin
-  db.run(`INSERT OR IGNORE INTO admin (username, password) VALUES ('admin', 'password')`);
+const Menu = mongoose.model('Menu', new mongoose.Schema({
+  name: String,
+  price: Number
+}));
 
-  // Insert sample menu items (commented out as per user request)
-  // db.run(`INSERT OR IGNORE INTO menu (name, price) VALUES ('Pizza', 10.99)`);
-  // db.run(`INSERT OR IGNORE INTO menu (name, price) VALUES ('Burger', 8.99)`);
-  // db.run(`INSERT OR IGNORE INTO menu (name, price) VALUES ('Pasta', 12.99)`);
-});
+const Bill = mongoose.model('Bill', new mongoose.Schema({
+  billNumber: { type: Number, unique: true },
+  customer_phone: String,
+  items: Array,
+  total: Number,
+  date: { type: Date, default: Date.now }
+}));
 
-module.exports = db;
+// Default Admin Create
+const initAdmin = async () => {
+  const exists = await Admin.findOne({ username: 'admin' });
+  if (!exists) await Admin.create({ username: 'admin', password: 'password' });
+};
+initAdmin();
+
+module.exports = { Admin, Menu, Bill };
